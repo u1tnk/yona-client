@@ -1,14 +1,17 @@
 class MainViewController < UITableViewController
   FeedURL = 'http://headlines.yahoo.co.jp/rss/all-c_sci.xml'
 
+  YONA_TOP_URL = 'http://yona.dev/feeds.json'
+
   def viewDidLoad
     super
     navigationItem.title = 'rss'
 
+    p(BW::JSON)
     @ptrview = SSPullToRefreshView.alloc.initWithScrollView(tableView, delegate:self)
     @items ||= []
 
-    fetch_rss(FeedURL) do |items|
+    fetch_rss do |items|
       @items = items
       view.reloadData
     end
@@ -19,16 +22,18 @@ class MainViewController < UITableViewController
     @ptrview = nil
   end
 
-  def fetch_rss(url, &cb)
+  def fetch_rss(&cb)
     items = []
-    BW::HTTP.get(url) do |res|
+    BW::HTTP.get(YONA_TOP_URL) do |res|
       if res.ok?
-        xml = res.body.to_str
-
-        parser = BW::RSSParser.new(xml, true)
-        parser.parse do |item|
-          items.push(item)
+        unreads = BW::JSON.parse(res.body.to_str)
+        unreads.each do |unread|
+          items.push({kind: :tag, data: unread["tag"]})
+          unread["user_feeds"].each do |uf|
+            items.push({kind: :feed, data: uf})
+          end
         end
+        parser = BW::JSON.parse(res.body.to_str)
       else
         App.alert(res.error_message)
       end
@@ -38,7 +43,7 @@ class MainViewController < UITableViewController
 
   def pullToRefreshViewDidStartLoading(ptrview)
     @ptrview.startLoading
-    fetch_rss(FeedURL) do |items|
+    fetch_rss do |items|
       @items = items
       @ptrview.finishLoading
       view.reloadData
@@ -53,14 +58,23 @@ class MainViewController < UITableViewController
     cell = tableView.dequeueReusableCellWithIdentifier('cell') || UITableViewCell.alloc.initWithStyle(
       UITableViewCellStyleDefault, reuseIdentifier:'cell'
     )
-    cell.accessoryType = :disclosure.uitablecellaccessory
-    cell.textLabel.font = :bold.uifont(14)
-    cell.textLabel.text = @items[indexPath.row].title
+    if @items[indexPath.row][:kind] == :tag
+      cell.accessoryType = UITableViewCellAccessoryNone
+      cell.textLabel.font = :bold.uifont(20)
+      cell.textLabel.text = @items[indexPath.row][:data]["label"]
+    else
+      cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator
+      cell.textLabel.font = :bold.uifont(14)
+      cell.textLabel.text = @items[indexPath.row][:data]["feed"]["title"]
+    end
     return cell
   end
 
   def tableView(tableView, didSelectRowAtIndexPath:indexPath)
     navigationController << WebViewController.new.tap do |c|
+      if @items[indexPath.row][:kind] == :tag
+        return
+      end
       c.url = @items[indexPath.row].link
     end
   end
