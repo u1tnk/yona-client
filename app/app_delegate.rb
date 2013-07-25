@@ -5,5 +5,6 @@ class AppDelegate
     @window.rootViewController =
       UINavigationController.alloc.initWithRootViewController(MainViewController.new)
     @window.makeKeyAndVisible
+    true
   end
 end

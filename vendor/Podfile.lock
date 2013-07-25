@@ -1,10 +1,13 @@
 PODS:
   - Reachability (3.0.0)
+  - SSPullToRefresh (1.1.2)
 
 DEPENDENCIES:
   - Reachability (~> 3.0.0)
+  - SSPullToRefresh
 
 SPEC CHECKSUMS:
   Reachability: 500bd76bf6cd8ff2c6fb715fc5f44ef6e4c024f2
+  SSPullToRefresh: 8d8360b0ff0dc7b344656b48ddf9732c47e78806
 
 COCOAPODS: 0.20.2
