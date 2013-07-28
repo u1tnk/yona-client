@@ -1,17 +1,14 @@
 class MainViewController < UITableViewController
-  FeedURL = 'http://headlines.yahoo.co.jp/rss/all-c_sci.xml'
-
   YONA_TOP_URL = 'http://yona.dev/feeds.json'
 
   def viewDidLoad
     super
     navigationItem.title = 'rss'
 
-    p(BW::JSON)
     @ptrview = SSPullToRefreshView.alloc.initWithScrollView(tableView, delegate:self)
     @items ||= []
 
-    fetch_rss do |items|
+    fetch do |items|
       @items = items
       view.reloadData
     end
@@ -22,7 +19,7 @@ class MainViewController < UITableViewController
     @ptrview = nil
   end
 
-  def fetch_rss(&cb)
+  def fetch(&cb)
     items = []
     BW::HTTP.get(YONA_TOP_URL) do |res|
       if res.ok?
@@ -43,7 +40,7 @@ class MainViewController < UITableViewController
 
   def pullToRefreshViewDidStartLoading(ptrview)
     @ptrview.startLoading
-    fetch_rss do |items|
+    fetch do |items|
       @items = items
       @ptrview.finishLoading
       view.reloadData
@@ -71,6 +68,7 @@ class MainViewController < UITableViewController
   end
 
   def tableView(tableView, didSelectRowAtIndexPath:indexPath)
+    return
     navigationController << WebViewController.new.tap do |c|
       if @items[indexPath.row][:kind] == :tag
         return
